@@ -22,11 +22,14 @@ export class Drawer {
       this.ctx.fillRect(x * this.scale + ((this.scale - width) / 2), y * this.scale + ((this.scale - width) / 2), width, width);
     }
   
-    public drawCircle(x: number, y: number, color: string, size = 1):void {
+    public drawCircle(x: number, y: number, color: string, strokeColor: string, size = 1):void {
       this.ctx.beginPath();
       this.ctx.fillStyle = color;
-      this.ctx.arc(x * this.scale + this.scale / 2, y * this.scale + this.scale / 2, (size * this.scale) / 2, 0, 2 * Math.PI);
+      this.ctx.lineWidth = 5;
+      this.ctx.strokeStyle = strokeColor;
+      this.ctx.arc(x * this.scale + this.scale / 2, y * this.scale + this.scale / 2, (size * this.scale) / 2.5, 0, 2 * Math.PI);
       this.ctx.fill();
+      this.ctx.stroke();
     }
 
     public drawDiamond(x: number, y: number, color: string, size = 1): void {

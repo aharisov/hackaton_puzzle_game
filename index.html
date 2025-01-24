@@ -22,20 +22,28 @@
       padding-left: 13%;
       padding-top: 1%;
     }
-    
-    
+    #display {
+      position: absolute;
+      left: 6px;
+      z-index: -1;
+      width: 600px;
+      height: 600px;
+      background: #fff url("bg.svg") 0 0;
+    }
+    #display, canvas {
+      margin-left: 13%;
+    }
+    canvas {
+      background-color: transparent;
+    }
   </style>
 </head>
 
 <body style= "background-color:#faf0e6">
-
-
   <div id="score_display">Level : <span id="score"></span></div>
   <div id="display" class="float"></div>
 </body>
 
 
 <script type="module" src="./dist/PuzzleGame.js"></script>
-
-
 </html>
