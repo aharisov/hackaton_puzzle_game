@@ -15,11 +15,14 @@ export class Drawer {
       this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }
   
-    public drawRectangle(x: number, y: number, color: string, size = 1):void {
+    public drawRectangle(x: number, y: number, color: string, strokeColor?: string, size = 1):void {
       this.ctx.beginPath();
       this.ctx.fillStyle = color;
+      this.ctx.lineWidth = 4;
+      strokeColor ? this.ctx.strokeStyle = strokeColor : '';
       const width = size * this.scale;
       this.ctx.fillRect(x * this.scale + ((this.scale - width) / 2), y * this.scale + ((this.scale - width) / 2), width, width);
+      this.ctx.strokeRect(x * this.scale + ((this.scale - width) / 2), y * this.scale + ((this.scale - width) / 2), width, width);
     }
   
     public drawCircle(x: number, y: number, color: string, strokeColor: string, size = 1):void {

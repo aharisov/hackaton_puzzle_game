@@ -1,6 +1,7 @@
 import { Drawer } from "../Drawer.js";
 import { Game } from "./Game.js";
 import { Player } from "./Player.js";
+import { Point } from "./Point.js";
 
 
 export class Display{
@@ -25,6 +26,17 @@ export class Display{
             );
         })
     }
+
+    public drawWalls(walls: Point[]): void {
+        walls.forEach(wall => {
+            this.drawer.drawRectangle(
+                wall.getX(), 
+                wall.getY(), 
+                wall.getColor(),
+                wall.getStrokeColor()
+            );
+        })
+    }
   
     public draw(game:Game):void {
         // clear field
@@ -37,8 +49,9 @@ export class Display{
             game.getEndPoint().getColor(),
             game.getEndPoint().getStrokeColor()
         );
-        
-        // draw rocks and holes
+
+        // draw walls
+        this.drawWalls(game.getWalls());
 
         // draw players
         this.drawPlayers(game.getPlayers());

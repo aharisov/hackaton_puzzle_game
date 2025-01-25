@@ -34,6 +34,7 @@ export class Movable extends Point {
     isObstacle(obstacle) {
         if (obstacle == undefined || obstacle == this)
             return false;
+        console.info('coords', this.x, obstacle.getX(), this.y, obstacle.getY());
         return this.x == obstacle.getX() && this.y == obstacle.getY();
     }
 }

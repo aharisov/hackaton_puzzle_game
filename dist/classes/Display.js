@@ -13,12 +13,18 @@ export class Display {
             this.drawer.drawCircle(player.getX(), player.getY(), player.getColor(), player.getStrokeColor());
         });
     }
+    drawWalls(walls) {
+        walls.forEach(wall => {
+            this.drawer.drawRectangle(wall.getX(), wall.getY(), wall.getColor(), wall.getStrokeColor());
+        });
+    }
     draw(game) {
         // clear field
         this.drawer.clear();
         // draw finish point
         this.drawer.drawCircle(game.getEndPoint().getX(), game.getEndPoint().getY(), game.getEndPoint().getColor(), game.getEndPoint().getStrokeColor());
-        // draw rocks and holes
+        // draw walls
+        this.drawWalls(game.getWalls());
         // draw players
         this.drawPlayers(game.getPlayers());
     }

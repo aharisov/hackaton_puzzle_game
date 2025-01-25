@@ -10,11 +10,14 @@ export class Drawer {
     clear() {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }
-    drawRectangle(x, y, color, size = 1) {
+    drawRectangle(x, y, color, strokeColor, size = 1) {
         this.ctx.beginPath();
         this.ctx.fillStyle = color;
+        this.ctx.lineWidth = 4;
+        strokeColor ? this.ctx.strokeStyle = strokeColor : '';
         const width = size * this.scale;
         this.ctx.fillRect(x * this.scale + ((this.scale - width) / 2), y * this.scale + ((this.scale - width) / 2), width, width);
+        this.ctx.strokeRect(x * this.scale + ((this.scale - width) / 2), y * this.scale + ((this.scale - width) / 2), width, width);
     }
     drawCircle(x, y, color, strokeColor, size = 1) {
         this.ctx.beginPath();

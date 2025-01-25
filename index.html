@@ -24,7 +24,7 @@
     }
     #display {
       position: absolute;
-      left: 6px;
+      left: 0;
       z-index: -1;
       width: 600px;
       height: 600px;
@@ -36,12 +36,48 @@
     canvas {
       background-color: transparent;
     }
+    #loader {
+      position: absolute;
+      top: 99px;
+      left: 266px;
+      z-index: 999;
+      display: none;
+      width: 600px;
+      height: 600px;
+      background: url("loading.gif") center center;
+      opacity: 0.9;
+    }
+    #loader.active {
+      display: block;
+    }
+    #finish {
+      position: absolute;
+      top: 99px;
+      left: 266px;
+      z-index: 999;
+      display: none;
+      width: 600px;
+      height: 600px;
+      background: #fff;
+      font-size: 48px;
+      font-weight: bold;
+      color: #4a90e2;
+      opacity: 0.9;
+      text-align: center;
+    }
+    #finish.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 
-<body style= "background-color:#faf0e6">
+<body style= "position: relative; background-color:#faf0e6">
   <div id="score_display">Level : <span id="score"></span></div>
   <div id="display" class="float"></div>
+  <div id="loader" class="active"></div> 
+  <div id="finish">Congratulations, <br>You won!</div> 
 </body>
 
 
