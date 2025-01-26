@@ -6,6 +6,9 @@ import { Shape } from "./Shape.js";
 import { Color } from "./Color.js";
 import { File } from "./File.js";
 import { Obstacle } from "./Obstacle.js";
+import { Door } from "./Door.js";
+import { Plate } from "./Plate.js";
+import { State } from "./State.js";
 export class Game {
     constructor(width, height) {
         this.width = width;
@@ -17,9 +20,18 @@ export class Game {
         this.player2 = new Player(-1, -1, Color.RED, Shape.CIRCLE, Color.DARKRED);
         this.endPoint = new Point(-1, -1, Color.YELLOW, Shape.CIRCLE, Color.DARKYELLOW);
         this.walls = [];
+        this.doors = [];
+        this.pressurePlates = [];
+        this.pressedPlate = { id: -1, player: undefined };
         this.dir = Direction.RIGHT;
         this.tmpCoords = [-1, -1];
-        this.generateObjects();
+        this.doorColors = [
+            ['#FF8C00', '#885000'],
+            ['#8A2BE2', '#4A1582'],
+            ['#00FF00', '#008800'],
+            ['#FF69B4', '#B4447D'],
+            ['#9e0e40', '#B4447D'],
+        ];
         this.display.draw(this);
     }
     getLevel() {
@@ -34,11 +46,14 @@ export class Game {
     getWalls() {
         return this.walls;
     }
-    generateObjects() {
-        let cnt = this.level;
+    getDoors() {
+        return this.doors;
+    }
+    getPlates() {
+        return this.pressurePlates;
     }
     refreshData(data) {
-        var _a;
+        var _a, _b;
         this.levelData = data;
         // show player 1
         this.player1.setX(this.levelData.PlayersStart[0][0]);
@@ -53,6 +68,15 @@ export class Game {
         this.walls = [];
         (_a = this.levelData.Walls) === null || _a === void 0 ? void 0 : _a.forEach(wall => {
             this.walls.push(new Point(wall[0], wall[1], '#666', Shape.RECTANGLE, '#444'));
+        });
+        // show doors with plates
+        this.doors = [];
+        this.pressurePlates = [];
+        (_b = this.levelData.Doors) === null || _b === void 0 ? void 0 : _b.forEach((door, index) => {
+            const fillColor = this.doorColors[index][0];
+            const strokeColor = this.doorColors[index][1];
+            this.doors.push(new Door(door[0], door[1], fillColor, Shape.RECTANGLE, strokeColor, door[2]));
+            this.pressurePlates.push(new Plate(this.levelData.PressurePlates[index][0], this.levelData.PressurePlates[index][1], fillColor, Shape.DIAMOND, strokeColor, this.levelData.PressurePlates[index][2]));
         });
     }
     initialize(data) {
@@ -120,7 +144,30 @@ export class Game {
     isEndPoint(player) {
         return this.endPoint.getX() == player.getX() && this.endPoint.getY() == player.getY();
     }
-    isObstacle(x, y, type) {
+    getPlateById(id) {
+        const plate = this.pressurePlates.filter(el => el.getId() == id);
+        return plate[0];
+    }
+    changePlateState(plate, action, player) {
+        switch (action) {
+            case 'press':
+                plate.setState(State.PRESSED);
+                this.pressedPlate = { id: plate.getId(), player: player };
+                this.changeDoorState(plate.getId(), State.OPENED);
+                break;
+            case 'unpress':
+                plate.setState(State.CLOSED);
+                this.pressedPlate = { id: -1, player: undefined };
+                this.changeDoorState(plate.getId(), State.CLOSED);
+                break;
+        }
+    }
+    changeDoorState(id, state) {
+        const door = this.doors.filter(el => el.getId() == id);
+        if (door.length > 0)
+            door[0].setState(state);
+    }
+    isObstacle(x, y, type, player) {
         let obstacle = undefined;
         switch (type) {
             case Obstacle.WALL:
@@ -140,14 +187,38 @@ export class Game {
                     }
                 }
                 break;
+            case Obstacle.DOOR:
+                obstacle = this.doors.filter(el => el.getX() == x && el.getY() == y && State[el.getState()] == 'CLOSED');
+                break;
+            case Obstacle.PLATE:
+                obstacle = this.pressurePlates.filter(el => el.getX() == x && el.getY() == y);
+                if (obstacle.length > 0) {
+                    this.changePlateState(obstacle[0], 'press', player);
+                }
+                break;
         }
         return obstacle;
     }
     movePlayer(player) {
-        const wall = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.WALL);
+        // check if the player meets wall, door or another player
+        const checkWall = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.WALL);
         const checkPlayer = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.PLAYER);
-        if (wall && wall.length > 0) {
-            player.move(this.dir, this.width - 1, this.height - 1, wall[0]);
+        const checkDoor = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.DOOR);
+        if (this.level > 0) {
+            // check if the player meets plate
+            let checkPlate = undefined;
+            if (this.pressedPlate.id === -1) {
+                checkPlate = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.PLATE, player);
+            }
+            if (this.pressedPlate.player === player && (checkPlate === undefined || (checkPlate === null || checkPlate === void 0 ? void 0 : checkPlate.length) === 0)) {
+                this.changePlateState(this.getPlateById(this.pressedPlate.id), 'unpress');
+            }
+        }
+        if (checkWall && checkWall.length > 0) {
+            player.move(this.dir, this.width - 1, this.height - 1, checkWall[0]);
+        }
+        else if (checkDoor && checkDoor.length > 0) {
+            player.move(this.dir, this.width - 1, this.height - 1, checkDoor[0]);
         }
         else if (checkPlayer && checkPlayer.length > 0) {
             player.move(this.dir, this.width - 1, this.height - 1, checkPlayer[0]);
@@ -165,7 +236,7 @@ export class Game {
     nextLevel() {
         if (this.isLevelFinished()) {
             this.level++;
-            if (this.level == 6) {
+            if (this.level == 5) {
                 const finish = document.getElementById('finish');
                 finish === null || finish === void 0 ? void 0 : finish.classList.add('active');
             }

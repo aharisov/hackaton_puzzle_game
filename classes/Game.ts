@@ -7,6 +7,9 @@ import { Color } from "./Color.js";
 import { File } from "./File.js";
 import { Level } from "./Level.js";
 import { Obstacle } from "./Obstacle.js";
+import { Door } from "./Door.js";
+import { Plate } from "./Plate.js";
+import { State } from "./State.js";
 
 export class Game{
     private width: number;
@@ -17,9 +20,13 @@ export class Game{
     private player2: Player;
     private endPoint: Point;
     private walls: Point[];
+    private doors: Door[];
+    private pressurePlates: Plate[];
     private dir: Direction;
     private levelData: Level;
     private tmpCoords: number[];
+    private doorColors: string[][];
+    private pressedPlate: {id: number, player: any};
     
     constructor(width:number, height:number) {
         this.width = width;
@@ -31,9 +38,18 @@ export class Game{
         this.player2 = new Player(-1, -1, Color.RED, Shape.CIRCLE, Color.DARKRED);
         this.endPoint = new Point(-1, -1, Color.YELLOW, Shape.CIRCLE, Color.DARKYELLOW);
         this.walls = [];
+        this.doors = [];
+        this.pressurePlates = [];
+        this.pressedPlate = {id: -1, player: undefined};
         this.dir = Direction.RIGHT;
         this.tmpCoords = [-1, -1];
-        this.generateObjects();
+        this.doorColors = [
+            ['#FF8C00', '#885000'],
+            ['#8A2BE2', '#4A1582'],
+            ['#00FF00', '#008800'],
+            ['#FF69B4', '#B4447D'],
+            ['#9e0e40', '#B4447D'],
+        ];
         this.display.draw(this);
     }
 
@@ -53,8 +69,12 @@ export class Game{
         return this.walls;
     }
 
-    public generateObjects(): void {
-        let cnt: number = this.level;
+    public getDoors(): Door[] {
+        return this.doors;
+    }
+
+    public getPlates(): Plate[] {
+        return this.pressurePlates;
     }
 
     private refreshData(data: Level): void {
@@ -74,6 +94,36 @@ export class Game{
         this.walls = [];
         this.levelData.Walls?.forEach(wall => {
             this.walls.push(new Point(wall[0], wall[1], '#666', Shape.RECTANGLE, '#444'));
+        })
+
+        // show doors with plates
+        this.doors = [];
+        this.pressurePlates = [];
+        this.levelData.Doors?.forEach((door, index) => {
+            const fillColor = this.doorColors[index][0];
+            const strokeColor = this.doorColors[index][1];
+
+            this.doors.push(
+                new Door(
+                    door[0], 
+                    door[1], 
+                    fillColor, 
+                    Shape.RECTANGLE, 
+                    strokeColor,
+                    door[2]
+                )
+            );
+
+            this.pressurePlates.push(
+                new Plate(
+                    this.levelData.PressurePlates![index][0], 
+                    this.levelData.PressurePlates![index][1], 
+                    fillColor, 
+                    Shape.DIAMOND, 
+                    strokeColor,
+                    this.levelData.PressurePlates![index][2]
+                )
+            );
         })
     }
 
@@ -148,7 +198,34 @@ export class Game{
         return this.endPoint.getX() == player.getX() && this.endPoint.getY() == player.getY();
     }
 
-    private isObstacle(x: number, y: number, type: Obstacle): Point[] | undefined {
+    private getPlateById(id: number): Plate {
+        const plate = this.pressurePlates.filter(el => el.getId() == id);
+
+        return plate[0];
+    }
+
+    private changePlateState(plate: Plate, action: string, player?: Player | undefined): void {
+        switch (action) {
+            case 'press':
+                plate.setState(State.PRESSED);
+                this.pressedPlate = {id: plate.getId(), player: player};
+                this.changeDoorState(plate.getId(), State.OPENED);
+                break;
+            case 'unpress':
+                plate.setState(State.CLOSED);
+                this.pressedPlate = {id: -1, player: undefined};
+                this.changeDoorState(plate.getId(), State.CLOSED);
+                break;
+        }
+    }
+
+    private changeDoorState(id: number, state: State): void {
+        const door = this.doors.filter(el => el.getId() == id);
+        
+        if (door.length > 0) door[0].setState(state);
+    }
+
+    private isObstacle(x: number, y: number, type: Obstacle, player?: Player): Point[] | undefined {
         let obstacle = undefined;
 
         switch (type) {
@@ -168,17 +245,43 @@ export class Game{
                     }
                 }
                 break;
+            case Obstacle.DOOR:
+                obstacle = this.doors.filter(el => el.getX() == x && el.getY() == y && State[el.getState()] == 'CLOSED');
+                break;
+            case Obstacle.PLATE:
+                obstacle = this.pressurePlates.filter(el => el.getX() == x && el.getY() == y);
+                if (obstacle.length > 0) {
+                    this.changePlateState(obstacle[0], 'press', player);
+                }
+                break;
         }
 
         return obstacle;
     }
 
     private movePlayer(player: Player): void { 
-        const wall = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.WALL);
+        // check if the player meets wall, door or another player
+        const checkWall = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.WALL);
         const checkPlayer = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.PLAYER);
+        const checkDoor = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.DOOR);
 
-        if (wall && wall.length > 0) {
-            player.move(this.dir, this.width - 1, this.height - 1, wall[0]);       
+        if (this.level > 0) {
+            // check if the player meets plate
+            let checkPlate = undefined;
+
+            if (this.pressedPlate.id === -1) {
+                checkPlate = this.isObstacle(this.tmpCoords[0], this.tmpCoords[1], Obstacle.PLATE, player);
+            }
+            
+            if (this.pressedPlate.player === player && (checkPlate === undefined || checkPlate?.length === 0)) {
+                this.changePlateState(this.getPlateById(this.pressedPlate.id), 'unpress')
+            }
+        }
+
+        if (checkWall && checkWall.length > 0) {
+            player.move(this.dir, this.width - 1, this.height - 1, checkWall[0]);       
+        } else if (checkDoor && checkDoor.length > 0) {
+            player.move(this.dir, this.width - 1, this.height - 1, checkDoor[0]);       
         } else if (checkPlayer && checkPlayer.length > 0) {
             player.move(this.dir, this.width - 1, this.height - 1, checkPlayer[0]);
         } else {
@@ -199,7 +302,7 @@ export class Game{
         if (this.isLevelFinished()) {
             this.level++;
 
-            if (this.level == 6) {
+            if (this.level == 5) {
                 const finish = document.getElementById('finish');
                 finish?.classList.add('active');
             } else {

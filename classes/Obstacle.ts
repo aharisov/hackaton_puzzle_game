@@ -1,4 +1,7 @@
 export enum Obstacle {
     PLAYER,
-    WALL
+    WALL,
+    DOOR,
+    PLATE,
+    PRESSED_PLATE
 }

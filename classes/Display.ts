@@ -1,7 +1,10 @@
 import { Drawer } from "../Drawer.js";
+import { Door } from "./Door.js";
 import { Game } from "./Game.js";
-import { Player } from "./Player.js";
+import { Plate } from "./Plate.js";
 import { Point } from "./Point.js";
+import { Shape } from "./Shape.js";
+import { State } from "./State.js";
 
 
 export class Display{
@@ -16,26 +19,65 @@ export class Display{
         if(score!=null) score.innerHTML = game.getLevel().toString();
     }
 
-    public drawPlayers(players: Player[]): void {
-        players.forEach(player => {
-            this.drawer.drawCircle(
-                player.getX(), 
-                player.getY(), 
-                player.getColor(), 
-                player.getStrokeColor()
-            );
-        })
-    }
-
-    public drawWalls(walls: Point[]): void {
-        walls.forEach(wall => {
-            this.drawer.drawRectangle(
-                wall.getX(), 
-                wall.getY(), 
-                wall.getColor(),
-                wall.getStrokeColor()
-            );
-        })
+    public drawObjects(objects: Point[] | Door[] | Plate[], shape: Shape): void {
+        switch (shape) {
+            case Shape.CIRCLE:
+                objects.forEach(object => {
+                    this.drawer.drawCircle(
+                        object.getX(), 
+                        object.getY(), 
+                        object.getColor(), 
+                        object.getStrokeColor()
+                    );
+                });
+                break;
+            case Shape.RECTANGLE:
+                objects.forEach(object => {
+                    if (object instanceof Door && object.getState() == State.CLOSED) {
+                        this.drawer.drawRectangle(
+                            object.getX(), 
+                            object.getY(), 
+                            object.getColor(), 
+                            object.getStrokeColor()
+                        );
+                    } else if (object instanceof Door && object.getState() == State.OPENED) {
+                        this.drawer.drawRectangle(
+                            object.getX(), 
+                            object.getY(), 
+                            object.getColor(), 
+                            object.getColor()
+                        );
+                    } else {
+                        this.drawer.drawRectangle(
+                            object.getX(), 
+                            object.getY(), 
+                            object.getColor(), 
+                            object.getStrokeColor()
+                        );
+                    }
+                });
+                break;
+            case Shape.DIAMOND:
+                objects.forEach(object => {
+                    if (object instanceof Plate && object.getState() == State.CLOSED) {
+                        this.drawer.drawDiamond(
+                            object.getX(), 
+                            object.getY(), 
+                            object.getColor(),
+                            object.getStrokeColor()
+                        );
+                    } else {
+                        this.drawer.drawDiamond(
+                            object.getX(), 
+                            object.getY(), 
+                            object.getColor(),
+                            object.getColor()
+                        );
+                    }
+                });
+                break;
+        }
+        
     }
   
     public draw(game:Game):void {
@@ -51,11 +93,15 @@ export class Display{
         );
 
         // draw walls
-        this.drawWalls(game.getWalls());
+        this.drawObjects(game.getWalls(), Shape.RECTANGLE);
+
+        // draw doors
+        this.drawObjects(game.getDoors(), Shape.RECTANGLE);
+
+        // draw plates
+        this.drawObjects(game.getPlates(), Shape.DIAMOND);
 
         // draw players
-        this.drawPlayers(game.getPlayers());
-
-        
+        this.drawObjects(game.getPlayers(), Shape.CIRCLE);
     }        
 }

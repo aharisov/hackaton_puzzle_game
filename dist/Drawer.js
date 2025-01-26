@@ -23,14 +23,16 @@ export class Drawer {
         this.ctx.beginPath();
         this.ctx.fillStyle = color;
         this.ctx.lineWidth = 5;
-        this.ctx.strokeStyle = strokeColor;
+        strokeColor ? this.ctx.strokeStyle = strokeColor : '';
         this.ctx.arc(x * this.scale + this.scale / 2, y * this.scale + this.scale / 2, (size * this.scale) / 2.5, 0, 2 * Math.PI);
         this.ctx.fill();
         this.ctx.stroke();
     }
-    drawDiamond(x, y, color, size = 1) {
+    drawDiamond(x, y, color, strokeColor, size = 1) {
         this.ctx.beginPath();
         this.ctx.fillStyle = color;
+        this.ctx.lineWidth = 4;
+        strokeColor ? this.ctx.strokeStyle = strokeColor : '';
         const halfSize = (size * this.scale) / 2;
         const topX = x * this.scale + this.scale / 2;
         const topY = y * this.scale;
@@ -46,5 +48,6 @@ export class Drawer {
         this.ctx.lineTo(leftX, leftY);
         this.ctx.closePath();
         this.ctx.fill();
+        this.ctx.stroke();
     }
 }
